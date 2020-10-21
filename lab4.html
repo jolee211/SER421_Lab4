@@ -3,17 +3,33 @@
         <script type="text/javascript" src="lab4.js"></script>
     </head>
     <body onload="init()">
-        Suspects: <span id="suspects"></span><br/>
-        Weapons: <span id="weapons"></span><br/>
-        Rooms: <span id="rooms"></span><br/>
-
-        <div id="usernameForm">
+        <p>
+            Suspects: <span id="suspects"></span><br/>
+            Weapons: <span id="weapons"></span><br/>
+            Rooms: <span id="rooms"></span><br/>
+        </p>
+        <p><div id="usernameForm">
             <label for="username">Name: </label>
             <input type="text" id="username">
             <button onclick="start()">Enter</button>
-        </div>
+        </div></p>
 
-        <div id="welcome"></div>
-        <div id="userCards" style="margin-left: 40px;"></div>
+        <p><div id="welcome"></div></p>
+        <p><div id="userCards" style="margin-left: 40px;"></div></p>
+        <p><div id="guessForm" style="display: none;">
+            <label for="guessSuspect">Guess Suspect:</label>
+            <select name="guessSuspect" id="guessSuspect">
+
+            </select>
+            <label for="guessRoom">Guess Room:</label>
+            <select name="guessRoom" id="guessRoom">
+                
+            </select>
+            <label for="guessWeapon">Guess Weapon:</label>
+            <select name="guessWeapon" id="guessWeapon">
+                
+            </select>
+            <button onclick="guess()">Guess</button>
+        </div></p>
     </body>
 </html>

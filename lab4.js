@@ -94,10 +94,10 @@ function initArray(array, computerArray, userArray, fnLogItem) {
     let secretIndex = randomIndex(array.length);
     fnLogItem(secretIndex);
 
-    // remove secret suspect from suspects deck
+    // remove secret item from deck
     let shuffledArray = [...array];
     shuffledArray.splice(secretIndex, 1);
-    // randomize the suspects array
+    // randomize the array
     shuffle(shuffledArray);
     console.log('shuffled = ' + shuffledArray);
     // deal the rest of the cards to computer and user
@@ -113,13 +113,20 @@ function initArray(array, computerArray, userArray, fnLogItem) {
     console.log('computerArray = ' + computerArray);
 }
 
+//  Display the set of “cards” the human user “holds in their hand”
 function showUserCards() {
-    document.getElementById("userCards")
+    let cardsHtml = 'You hold the following cards:<br>';
+    cardsHtml += 'Rooms: ' + userRooms.join(', ') + '<br>';
+    cardsHtml += 'Suspects: ' + userSuspects.join(', ') + '<br>';
+    cardsHtml += 'Weapons: ' + userWeapons.join(', ') + '<br>';
+    document.getElementById("userCards").innerHTML = cardsHtml;
 }
 
+// Run this after the user enters a name
 function start() {
     showWelcome();
     // initialize the array
     initArrays();
     showUserCards();
 }
+
