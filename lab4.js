@@ -18,6 +18,10 @@ function init() {
     document.getElementById("rooms").innerHTML = rooms.join(', ');
 }
 
+function showHtmlElement(element) {
+    element.style.display = 'block';
+}
+
 // When the user’s enters their name, replace the initial form with a welcome message
 function showWelcome() {
     let username = document.getElementById("username").value;
@@ -25,7 +29,7 @@ function showWelcome() {
         let usernameFormDiv = document.getElementById("usernameForm");
         let welcomeDiv = document.getElementById("welcome");
         usernameFormDiv.style.display = "none";
-        welcomeDiv.style.display = "block";
+        showHtmlElement(welcomeDiv);
         welcomeDiv.innerHTML = `Welcome ${username}`;
     }
 }
@@ -122,11 +126,46 @@ function showUserCards() {
     document.getElementById("userCards").innerHTML = cardsHtml;
 }
 
+// Return an array that includes all elements from arrayToFilter except those that also appear in
+// elemsToRemove
+function filterOut(arrayToFilter, elemsToRemove) {
+    return arrayToFilter.filter((el) => {
+        return elemsToRemove.indexOf(el) < 0;
+    });
+}
+
+function addOptions(selectId, options) {
+    let select = document.getElementById(selectId);
+    for (let i = 0; i < options.length; i++) {
+        let opt = options[i];
+        let el = document.createElement('option');
+        el.textContent = opt;
+        el.value = opt;
+        select.appendChild(el);
+    }
+}
+
+function showGuessForm() {
+    // assemble an array of options that takes the rooms and excludes the ones that the user has
+    let roomOptions = filterOut(rooms, userRooms);
+    // assemble an array of options that takes the suspects and excludes the ones that the user has
+    let suspectOptions = filterOut(suspects, userSuspects);
+    // assemble an array of options that takes the suspects and excludes the ones that the user has
+    let weaponOptions = filterOut(weapons, userWeapons);
+    addOptions('guessSuspect', suspectOptions);
+    addOptions('guessRoom', roomOptions);
+    addOptions('guessWeapon', weaponOptions);
+
+    let guessForm = document.getElementById('guessForm');
+    showHtmlElement(guessForm);   
+}
+
 // Run this after the user enters a name
 function start() {
     showWelcome();
     // initialize the array
     initArrays();
     showUserCards();
+    // show the form for choosing a guess
+    showGuessForm();
 }
-
