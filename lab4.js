@@ -55,7 +55,7 @@ function swapArrayElements(array, m, i) {
 
 // Shuffle in-place the elements of the specified array
 function shuffle(array) {
-    var m = array.length, t, i;
+    let m = array.length, i;
     while (m) {
         i = randomIndex(m--);
         swapArrayElements(array, m, i);
@@ -170,11 +170,31 @@ function start() {
     showGuessForm();
 }
 
+// Choose one element from guessArray that doesn't match secretArray.
+// Return undefined if all elements match.
+function getOneWrongComponent(guessArray, secretArray) {
+    let m = secretArray.length, i;
+    while (m) {
+        i = randomIndex(m--);
+        if (guessArray[i] != secretArray[i]) {
+            return guessArray[i];
+        }
+    }
+}
+
 function guess() {
     let guessSuspect = document.getElementById('guessSuspect').value;
     let guessRoom = document.getElementById('guessRoom').value;
     let guessWeapon = document.getElementById('guessWeapon').value;
+    let messageElement = document.getElementById('message');
     if (guessSuspect === secretSuspect && guessRoom === secretRoom && guessWeapon === secretWeapon) {
-        document.getElementById('message').innerHTML = 'Congratulations! You win!';
+        messageElement.innerHTML = 'Congratulations! You win!';
+    } else {
+        let wrongComponent = getOneWrongComponent(
+            [guessSuspect,  guessRoom,  guessWeapon], 
+            [secretSuspect, secretRoom, secretWeapon]
+        ); 
+        messageElement.innerHTML = 'Your guess did not match the secret.<br> Incorrect component: '
+            + wrongComponent;
     }
 }
