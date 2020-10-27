@@ -169,3 +169,12 @@ function start() {
     // show the form for choosing a guess
     showGuessForm();
 }
+
+function guess() {
+    let guessSuspect = document.getElementById('guessSuspect').value;
+    let guessRoom = document.getElementById('guessRoom').value;
+    let guessWeapon = document.getElementById('guessWeapon').value;
+    if (guessSuspect === secretSuspect && guessRoom === secretRoom && guessWeapon === secretWeapon) {
+        document.getElementById('message').innerHTML = 'Congratulations! You win!';
+    }
+}
