@@ -16,7 +16,7 @@
 
         <p><div id="gameStarted">
             <p><div id="welcome"></div></p>
-            <p><div id="userCards" style="margin-left: 40px;"></div></p>
+            <p><div id="userCards"></div></p>
             <p><div id="guessForm" style="display: none;">
                 <label for="guessSuspect">Guess Suspect:</label>
                 <select name="guessSuspect" id="guessSuspect">
@@ -33,6 +33,9 @@
                 <button onclick="guess()">Guess</button>
             </div></p>
             <p><div id="message"></div></p>
+            <p><div id="continue" style="display: none;">
+                <button onclick="doContinue()">Continue</button>
+            </div></p>
         </div></p>
     </body>
 </html>

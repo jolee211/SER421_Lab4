@@ -22,16 +22,27 @@ function showHtmlElement(element) {
     element.style.display = 'block';
 }
 
-// When the user’s enters their name, replace the initial form with a welcome message
+function hideHtmlElement(element) {
+    element.style.display = 'none';
+}
+
+// When the user enters their name, replace the initial form with a welcome message
 function showWelcome() {
     let username = document.getElementById("username").value;
     if (username.length > 0) {
         let usernameFormDiv = document.getElementById("usernameForm");
         let welcomeDiv = document.getElementById("welcome");
-        usernameFormDiv.style.display = "none";
+        hideHtmlElement(usernameFormDiv);
         showHtmlElement(welcomeDiv);
         welcomeDiv.innerHTML = `Welcome ${username}`;
     }
+}
+
+function hideWelcome() {
+    let usernameFormDiv = document.getElementById("usernameForm");
+    let welcomeDiv = document.getElementById("welcome");
+    showHtmlElement(usernameFormDiv);
+    hideHtmlElement(welcomeDiv);
 }
 
 // globals to store the secret triplet
@@ -40,6 +51,8 @@ var secretSuspect, secretRoom, secretWeapon;
 var userSuspects = [], userRooms = [], userWeapons = [];
 // globals to store the computer cards
 var computerSuspects = [], computerRooms = [], computerWeapons = [];
+// variable for user winning
+let userWon = false;
 
 // Generate a random number between 0 and length-1
 function randomIndex(length) {
@@ -60,6 +73,15 @@ function shuffle(array) {
         i = randomIndex(m--);
         swapArrayElements(array, m, i);
     }
+}
+
+function resetArrays() {
+    userSuspects = [];
+    userRooms = [];
+    userWeapons = [];
+    computerSuspects = [];
+    computerRooms = [];
+    computerWeapons = [];
 }
 
 // Initialize the arrays for rooms, weapons, and suspects
@@ -123,7 +145,13 @@ function showUserCards() {
     cardsHtml += 'Rooms: ' + userRooms.join(', ') + '<br>';
     cardsHtml += 'Suspects: ' + userSuspects.join(', ') + '<br>';
     cardsHtml += 'Weapons: ' + userWeapons.join(', ') + '<br>';
-    document.getElementById("userCards").innerHTML = cardsHtml;
+    let userCardsDiv = document.getElementById("userCards");
+    userCardsDiv.innerHTML = cardsHtml;
+}
+
+function hideUserCards() {
+    let userCardsDiv = document.getElementById("userCards");
+    userCardsDiv.innerHTML = '';
 }
 
 // Return an array that includes all elements from arrayToFilter except those that also appear in
@@ -145,6 +173,14 @@ function addOptions(selectId, options) {
     }
 }
 
+function resetOptions(selectId) {
+    let select = document.getElementById(selectId);
+    let length = select.options.length;
+    for (let i = length - 1; i >= 0; i--) {
+        select.options[i] = null;
+    }
+}
+
 function showGuessForm() {
     // assemble an array of options that takes the rooms and excludes the ones that the user has
     let roomOptions = filterOut(rooms, userRooms);
@@ -157,7 +193,12 @@ function showGuessForm() {
     addOptions('guessWeapon', weaponOptions);
 
     let guessForm = document.getElementById('guessForm');
-    showHtmlElement(guessForm);   
+    showHtmlElement(guessForm);
+}
+
+function hideGuessForm() {
+    let guessForm = document.getElementById('guessForm');
+    hideHtmlElement(guessForm);
 }
 
 // Run this after the user enters a name
@@ -168,6 +209,29 @@ function start() {
     showUserCards();
     // show the form for choosing a guess
     showGuessForm();
+}
+
+function hideMessage() {
+    let messageElement = document.getElementById('message');
+    messageElement.innerHTML = '';
+}
+
+function hideContinue() {
+    let continueDiv = document.getElementById('continue');
+    hideHtmlElement(continueDiv);
+}
+
+function reset() {
+    userWon = false;
+    hideWelcome();
+    resetArrays();
+    hideUserCards();
+    hideGuessForm();
+    hideMessage();
+    hideContinue();
+    resetOptions('guessSuspect');
+    resetOptions('guessRoom');
+    resetOptions('guessWeapon');
 }
 
 // Choose one element from guessArray that doesn't match secretArray.
@@ -182,6 +246,12 @@ function getOneWrongComponent(guessArray, secretArray) {
     }
 }
 
+function doUserWon() {
+    userWon = true;
+    let continueDiv = document.getElementById('continue');
+    showHtmlElement(continueDiv);
+}
+
 function guess() {
     let guessSuspect = document.getElementById('guessSuspect').value;
     let guessRoom = document.getElementById('guessRoom').value;
@@ -189,6 +259,7 @@ function guess() {
     let messageElement = document.getElementById('message');
     if (guessSuspect === secretSuspect && guessRoom === secretRoom && guessWeapon === secretWeapon) {
         messageElement.innerHTML = 'Congratulations! You win!';
+        doUserWon();
     } else {
         let wrongComponent = getOneWrongComponent(
             [guessSuspect,  guessRoom,  guessWeapon], 
@@ -196,5 +267,12 @@ function guess() {
         ); 
         messageElement.innerHTML = 'Your guess did not match the secret.<br> Incorrect component: '
             + wrongComponent;
+        userWon = false;
+    }
+}
+
+function doContinue() {
+    if (userWon) {
+        reset();
     }
 }
