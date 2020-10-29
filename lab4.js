@@ -51,8 +51,14 @@ var secretSuspect, secretRoom, secretWeapon;
 var userSuspects = [], userRooms = [], userWeapons = [];
 // globals to store the computer cards
 var computerSuspects = [], computerRooms = [], computerWeapons = [];
-// variable for user winning
-let userWon = false;
+// globals for storing the computer guesses
+var compGuessSuspects = [], compGuessRooms = [], compGuessWeapons = [];
+// variable for someone winning
+let someoneWon = false;
+// variable for whether it was the user's turn
+let userTurn = true;
+// store wrong computer guesses
+let wrongComputerGuesses = [];
 
 // Generate a random number between 0 and length-1
 function randomIndex(length) {
@@ -82,33 +88,10 @@ function resetArrays() {
     computerSuspects = [];
     computerRooms = [];
     computerWeapons = [];
-}
-
-// Initialize the arrays for rooms, weapons, and suspects
-function initArrays() {
-    // initialize the suspects array
-    initArray(suspects, computerSuspects, userSuspects,
-        // use the callback to store the secrete suspect
-        (i) => {
-            secretSuspect = suspects[i];
-            console.log(`secretSuspect = ${secretSuspect}`);
-        });
-        
-    // initialize the rooms array
-    initArray(rooms, computerRooms, userRooms,
-        // use the callback to store the secrete suspect
-        (i) => {
-            secretRoom = rooms[i];
-            console.log(`secretRoom = ${secretRoom}`);
-        });
-
-    // initialize the weapons array
-    initArray(weapons, computerWeapons, userWeapons,
-        // use the callback to store the secrete suspect
-        (i) => {
-            secretWeapon = weapons[i];
-            console.log(`secretWeapon = ${secretWeapon}`);
-        });
+    compGuessSuspects = [];
+    compGuessRooms = [];
+    compGuessWeapons = [];
+    wrongComputerGuesses = [];
 }
 
 // Randomly select the secret item, then randomly distribute the remaining cards equally to the 
@@ -125,7 +108,6 @@ function initArray(array, computerArray, userArray, fnLogItem) {
     shuffledArray.splice(secretIndex, 1);
     // randomize the array
     shuffle(shuffledArray);
-    console.log('shuffled = ' + shuffledArray);
     // deal the rest of the cards to computer and user
     shuffledArray.forEach((val, i) => {
         let shuffledItem = shuffledArray[i];
@@ -135,8 +117,42 @@ function initArray(array, computerArray, userArray, fnLogItem) {
             userArray.push(shuffledItem);
         }
     });
-    console.log('userArray = ' + userArray);
-    console.log('computerArray = ' + computerArray);
+}
+
+// Initialize the arrays for rooms, weapons, and suspects
+function initArrays() {
+    // initialize the suspects array
+    initArray(suspects, computerSuspects, userSuspects,
+        // use the callback to store the secrete suspect
+        (i) => {
+            secretSuspect = suspects[i];
+        });
+    console.log('computerSuspects = ' + computerSuspects);
+    // initialize the rooms array
+    initArray(rooms, computerRooms, userRooms,
+        // use the callback to store the secrete room
+        (i) => {
+            secretRoom = rooms[i];
+        });
+    console.log('computerRooms = ' + computerRooms);
+    // initialize the weapons array
+    initArray(weapons, computerWeapons, userWeapons,
+        // use the callback to store the secrete weapon
+        (i) => {
+            secretWeapon = weapons[i];
+        });
+    console.log('computerWeapons = ' + computerWeapons);
+    console.log(`Secret: ${secretSuspect}, ${secretRoom}, ${secretWeapon}`);
+
+    // assemble an array of options that takes the rooms and excludes the ones that the user has
+    let roomOptions = filterOut(rooms, userRooms);
+    // assemble an array of options that takes the suspects and excludes the ones that the user has
+    let suspectOptions = filterOut(suspects, userSuspects);
+    // assemble an array of options that takes the suspects and excludes the ones that the user has
+    let weaponOptions = filterOut(weapons, userWeapons);
+    setOptions('guessSuspect', suspectOptions);
+    setOptions('guessRoom', roomOptions);
+    setOptions('guessWeapon', weaponOptions);
 }
 
 //  Display the set of “cards” the human user “holds in their hand”
@@ -162,7 +178,22 @@ function filterOut(arrayToFilter, elemsToRemove) {
     });
 }
 
-function addOptions(selectId, options) {
+// Clear all the elements in the HTML select with the specified ID
+function resetOptions(selectId) {
+    let select = document.getElementById(selectId);
+    let length = select.options.length;
+    for (let i = length - 1; i >= 0; i--) {
+        select.options[i] = null;
+    }
+}
+
+// Set the options for the HTML select with the specified ID
+// If there are existing options, they will be replaced by the specified array
+function setOptions(selectId, options) {
+    // clear out all the options
+    resetOptions(selectId);
+
+    // add the options
     let select = document.getElementById(selectId);
     for (let i = 0; i < options.length; i++) {
         let opt = options[i];
@@ -173,25 +204,7 @@ function addOptions(selectId, options) {
     }
 }
 
-function resetOptions(selectId) {
-    let select = document.getElementById(selectId);
-    let length = select.options.length;
-    for (let i = length - 1; i >= 0; i--) {
-        select.options[i] = null;
-    }
-}
-
 function showGuessForm() {
-    // assemble an array of options that takes the rooms and excludes the ones that the user has
-    let roomOptions = filterOut(rooms, userRooms);
-    // assemble an array of options that takes the suspects and excludes the ones that the user has
-    let suspectOptions = filterOut(suspects, userSuspects);
-    // assemble an array of options that takes the suspects and excludes the ones that the user has
-    let weaponOptions = filterOut(weapons, userWeapons);
-    addOptions('guessSuspect', suspectOptions);
-    addOptions('guessRoom', roomOptions);
-    addOptions('guessWeapon', weaponOptions);
-
     let guessForm = document.getElementById('guessForm');
     showHtmlElement(guessForm);
 }
@@ -222,7 +235,8 @@ function hideContinue() {
 }
 
 function reset() {
-    userWon = false;
+    someoneWon = false;
+    userTurn = true;
     hideWelcome();
     resetArrays();
     hideUserCards();
@@ -237,19 +251,28 @@ function reset() {
 // Choose one element from guessArray that doesn't match secretArray.
 // Return undefined if all elements match.
 function getOneWrongComponent(guessArray, secretArray) {
+    let guessArrayCopy = [...guessArray];
+    let secretArrayCopy = [...secretArray];
     let m = secretArray.length, i;
     while (m) {
         i = randomIndex(m--);
-        if (guessArray[i] != secretArray[i]) {
-            return guessArray[i];
+        if (guessArrayCopy[i] != secretArrayCopy[i]) {
+            return guessArrayCopy[i];
+        } else {
+            guessArrayCopy.splice(i, 1);
+            secretArrayCopy.splice(i, 1);
         }
     }
 }
 
-function doUserWon() {
-    userWon = true;
+function showContinueDiv() {
     let continueDiv = document.getElementById('continue');
     showHtmlElement(continueDiv);
+}
+
+function doSomeoneWon() {
+    someoneWon = true;
+    showContinueDiv();
 }
 
 function guess() {
@@ -259,20 +282,71 @@ function guess() {
     let messageElement = document.getElementById('message');
     if (guessSuspect === secretSuspect && guessRoom === secretRoom && guessWeapon === secretWeapon) {
         messageElement.innerHTML = 'Congratulations! You win!';
-        doUserWon();
+        doSomeoneWon();
     } else {
         let wrongComponent = getOneWrongComponent(
             [guessSuspect,  guessRoom,  guessWeapon], 
             [secretSuspect, secretRoom, secretWeapon]
         ); 
-        messageElement.innerHTML = 'Your guess did not match the secret.<br> Incorrect component: '
-            + wrongComponent;
-        userWon = false;
+        messageElement.innerHTML = 'Your guess did not match the secret.<br> Incorrect component: ' + wrongComponent;
+        someoneWon = false;
+        showContinueDiv();
     }
 }
 
 function doContinue() {
-    if (userWon) {
+    if (someoneWon) {
         reset();
+    } else {
+        hideMessage();
+        if (userTurn) {
+            userTurn = false;
+            hideGuessForm();
+            doComputerGuess();
+        } else {
+            userTurn = true;
+            showGuessForm();
+            hideContinue();
+        }
+    }
+}
+
+// Make a guess for the computer. The guess must be taken from a combination of the specified array
+// and the secret. The computer should not repeat previous guesses, so another array that contains
+// previous guesses is included.
+function randomGuessFrom(arrayToGuessFrom, secret, notThisOne) {
+    // copy orig array
+    let guessArray = [...arrayToGuessFrom];
+    guessArray.push(secret);
+
+    // filter out contents of notThisOne from guessArray
+    guessArray = guessArray.filter((el) => {
+        return notThisOne.indexOf(el) < 0;
+    });
+    let guessIndex = randomIndex(guessArray.length);
+    return guessArray[guessIndex];
+}
+
+function doComputerGuess() {
+    let compGuessSuspect = randomGuessFrom(userSuspects, secretSuspect, wrongComputerGuesses);
+    let compGuessRoom = randomGuessFrom(userRooms, secretRoom, wrongComputerGuesses);
+    let compGuessWeapon = randomGuessFrom(userWeapons, secretWeapon, wrongComputerGuesses);
+
+    let messageElement = document.getElementById('message');
+    let messageText = `Computer guess: Suspect: ${compGuessSuspect} Room: ${compGuessRoom} Weapon: ${compGuessWeapon} <br>`;
+    if (compGuessSuspect === secretSuspect && compGuessRoom === secretRoom && compGuessWeapon === secretWeapon) {
+        messageText += 'Computer wins!';
+        messageElement.innerHTML = messageText;
+        doSomeoneWon();
+    } else {
+        let wrongComponent = getOneWrongComponent(
+            [compGuessSuspect,  compGuessRoom,  compGuessWeapon], 
+            [secretSuspect, secretRoom, secretWeapon]
+        ); 
+        wrongComputerGuesses.push(wrongComponent);
+        console.log('wrongComputerGuesses = ' + wrongComputerGuesses);
+        messageText += 'Computer guess did not match the secret.<br> Incorrect component: ' + wrongComponent;
+        messageElement.innerHTML = messageText;
+        someoneWon = false;
     }
 }
