@@ -59,6 +59,38 @@ let someoneWon = false;
 let userTurn = true;
 // store wrong computer guesses
 let wrongComputerGuesses = [];
+// key to sessionStorage of user guesses array
+const USER_GUESSES_KEY = 'userGuesses';
+// key to sessionStorage of computer guesses array
+const COMPUTER_GUESSES_KEY = 'computerGuesses';
+
+resetSessionStorage();
+
+function resetSessionStorage() {
+    sessionStorage.clear();
+    sessionStorage.setItem(USER_GUESSES_KEY, '');
+    sessionStorage.setItem(COMPUTER_GUESSES_KEY, '');
+}
+
+function getUserGuesses() {
+    return sessionStorage.getItem(USER_GUESSES_KEY);
+}
+
+function addUserGuess(value) {
+    let userGuesses = getUserGuesses();
+    userGuesses += value;
+    sessionStorage.setItem(USER_GUESSES_KEY, userGuesses);
+}
+
+function getComputerGuesses() {
+    return sessionStorage.getItem(COMPUTER_GUESSES_KEY);
+}
+
+function addComputerGuess(value) {
+    let computerGuesses = getComputerGuesses();
+    computerGuesses += value;
+    sessionStorage.setItem(COMPUTER_GUESSES_KEY, computerGuesses);
+}
 
 // Generate a random number between 0 and length-1
 function randomIndex(length) {
@@ -234,6 +266,16 @@ function hideContinue() {
     hideHtmlElement(continueDiv);
 }
 
+function showHistoryDiv() {
+    let historyDiv = document.getElementById('history');
+    showHtmlElement(historyDiv);
+}
+
+function hideHistoryDiv() {
+    let historyDiv = document.getElementById('history');
+    hideHtmlElement(historyDiv);
+}
+
 function reset() {
     someoneWon = false;
     userTurn = true;
@@ -246,6 +288,8 @@ function reset() {
     resetOptions('guessSuspect');
     resetOptions('guessRoom');
     resetOptions('guessWeapon');
+    hideHistoryDiv();
+    resetSessionStorage();
 }
 
 // Choose one element from guessArray that doesn't match secretArray.
@@ -279,6 +323,9 @@ function guess() {
     let guessSuspect = document.getElementById('guessSuspect').value;
     let guessRoom = document.getElementById('guessRoom').value;
     let guessWeapon = document.getElementById('guessWeapon').value;
+    addUserGuess(`${guessSuspect}, ${guessRoom}, ${guessWeapon}<br>`);
+    updateHistory();
+
     let messageElement = document.getElementById('message');
     if (guessSuspect === secretSuspect && guessRoom === secretRoom && guessWeapon === secretWeapon) {
         messageElement.innerHTML = 'Congratulations! You win!';
@@ -290,8 +337,10 @@ function guess() {
         ); 
         messageElement.innerHTML = 'Your guess did not match the secret.<br> Incorrect component: ' + wrongComponent;
         someoneWon = false;
+        hideGuessForm();
         showContinueDiv();
     }
+    showHistoryDiv();
 }
 
 function doContinue() {
@@ -331,6 +380,8 @@ function doComputerGuess() {
     let compGuessSuspect = randomGuessFrom(userSuspects, secretSuspect, wrongComputerGuesses);
     let compGuessRoom = randomGuessFrom(userRooms, secretRoom, wrongComputerGuesses);
     let compGuessWeapon = randomGuessFrom(userWeapons, secretWeapon, wrongComputerGuesses);
+    addComputerGuess(`${compGuessSuspect}, ${compGuessRoom}, ${compGuessWeapon}<br>`);
+    updateHistory();
 
     let messageElement = document.getElementById('message');
     let messageText = `Computer guess: Suspect: ${compGuessSuspect} Room: ${compGuessRoom} Weapon: ${compGuessWeapon} <br>`;
@@ -348,5 +399,34 @@ function doComputerGuess() {
         messageText += 'Computer guess did not match the secret.<br> Incorrect component: ' + wrongComponent;
         messageElement.innerHTML = messageText;
         someoneWon = false;
+    }
+}
+
+function guessHistoryHTML(fistLine, guessHistory) {
+    let historyLinesHTML = fistLine;
+    historyLinesHTML += guessHistory;
+    historyLinesHTML += '<br>';
+    return historyLinesHTML;
+}
+
+function showOrHideHistory() {
+    let showHistoryBtn = document.getElementById('showHistory');
+    let historyLinesDiv = document.getElementById('historyLines');
+    if (showHistoryBtn.innerHTML === 'Hide History') {
+        historyLinesDiv.style.display = 'none';
+        showHistoryBtn.innerHTML = 'Show History';
+    } else {
+        historyLinesDiv.style.display = 'block';
+        showHistoryBtn.innerHTML = 'Hide History';
+        updateHistory();
+    }
+}
+
+function updateHistory() {
+    let historyLinesDiv = document.getElementById('historyLines');
+    if (historyLinesDiv.style.display === 'block') {
+        let historyLinesHTML = guessHistoryHTML('User guesses:<br>', getUserGuesses());
+        historyLinesHTML += guessHistoryHTML('Computer guesses:<br>', getComputerGuesses());
+        historyLinesDiv.innerHTML = historyLinesHTML;
     }
 }
