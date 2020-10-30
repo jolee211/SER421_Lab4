@@ -10,41 +10,6 @@ if (!rooms){
     var rooms = [ 'Kitchen', 'Ballroom', 'Conservatory', 'Dining Room', 'Cellar', 'Billiard Room', 'Library', 'Lounge', 'Hall', 'Study' ];
 }
 
-// Render the first version of the page
-function init() {
-    // Display the full set of suspects, rooms, and weapons at the top of the page
-    document.getElementById("suspects").innerHTML = suspects.join(', ');
-    document.getElementById("weapons").innerHTML = weapons.join(', ');
-    document.getElementById("rooms").innerHTML = rooms.join(', ');
-}
-
-function showHtmlElement(element) {
-    element.style.display = 'block';
-}
-
-function hideHtmlElement(element) {
-    element.style.display = 'none';
-}
-
-// When the user enters their name, replace the initial form with a welcome message
-function showWelcome() {
-    let username = document.getElementById("username").value;
-    if (username.length > 0) {
-        let usernameFormDiv = document.getElementById("usernameForm");
-        let welcomeDiv = document.getElementById("welcome");
-        hideHtmlElement(usernameFormDiv);
-        showHtmlElement(welcomeDiv);
-        welcomeDiv.innerHTML = `Welcome ${username}`;
-    }
-}
-
-function hideWelcome() {
-    let usernameFormDiv = document.getElementById("usernameForm");
-    let welcomeDiv = document.getElementById("welcome");
-    showHtmlElement(usernameFormDiv);
-    hideHtmlElement(welcomeDiv);
-}
-
 // globals to store the secret triplet
 var secretSuspect, secretRoom, secretWeapon;
 // globals to store the user cards
@@ -63,8 +28,67 @@ let wrongComputerGuesses = [];
 const USER_GUESSES_KEY = 'userGuesses';
 // key to sessionStorage of computer guesses array
 const COMPUTER_GUESSES_KEY = 'computerGuesses';
+// key to localStorage of computer wins
+const COMPUTER_WINS_KEY = 'computerWins';
+// key to localStorage of computer losses
+const COMPUTER_LOSSES_KEY = 'computerLosses';
+// key to sessionStorage of username
+const USERNAME_KEY = 'username';
+// key to localStorage of player history
+const PLAYER_HISTORY_KEY = 'playerHistory';
 
 resetSessionStorage();
+
+if (!localStorage.getItem(COMPUTER_WINS_KEY)) {
+    localStorage.setItem(COMPUTER_WINS_KEY, '0');
+}
+if (!localStorage.getItem(COMPUTER_LOSSES_KEY)) {
+    localStorage.setItem(COMPUTER_LOSSES_KEY, '0');
+}
+
+// Render the first version of the page
+function init() {
+    // Display the full set of suspects, rooms, and weapons at the top of the page
+    document.getElementById("suspects").innerHTML = suspects.join(', ');
+    document.getElementById("weapons").innerHTML = weapons.join(', ');
+    document.getElementById("rooms").innerHTML = rooms.join(', ');
+}
+
+function showHtmlElement(element) {
+    element.style.display = 'block';
+}
+
+function hideHtmlElement(element) {
+    element.style.display = 'none';
+}
+
+function saveUsername(username) {
+    sessionStorage.setItem(USERNAME_KEY, username);
+}
+
+function getUsername() {
+    return sessionStorage.getItem(USERNAME_KEY);
+}
+
+// When the user enters their name, replace the initial form with a welcome message
+function showWelcome() {
+    let username = document.getElementById("username").value;
+    if (username.length > 0) {
+        let usernameFormDiv = document.getElementById("usernameForm");
+        let welcomeDiv = document.getElementById("welcome");
+        hideHtmlElement(usernameFormDiv);
+        showHtmlElement(welcomeDiv);
+        welcomeDiv.innerHTML = `Welcome ${username}`;
+        saveUsername(username);
+    }
+}
+
+function hideWelcome() {
+    let usernameFormDiv = document.getElementById("usernameForm");
+    let welcomeDiv = document.getElementById("welcome");
+    showHtmlElement(usernameFormDiv);
+    hideHtmlElement(welcomeDiv);
+}
 
 function resetSessionStorage() {
     sessionStorage.clear();
@@ -74,6 +98,32 @@ function resetSessionStorage() {
 
 function getUserGuesses() {
     return sessionStorage.getItem(USER_GUESSES_KEY);
+}
+
+function getNumberFromLocalStorage(key) {
+    let string = localStorage.getItem(key);
+    if (string) {
+        return parseInt(string, 10);
+    }
+    return 0;
+}
+
+function getComputerWins() {
+    return getNumberFromLocalStorage(COMPUTER_WINS_KEY);
+}
+
+function getComputerLosses() {
+    return getNumberFromLocalStorage(COMPUTER_LOSSES_KEY);
+}
+
+function incrementComputerWins() {
+    let wins = getComputerWins() + 1;
+    localStorage.setItem(COMPUTER_WINS_KEY, wins.toString());
+}
+
+function incrementComputerLosses() {
+    let wins = getComputerLosses() + 1;
+    localStorage.setItem(COMPUTER_LOSSES_KEY, wins.toString());
 }
 
 function addUserGuess(value) {
@@ -329,7 +379,9 @@ function guess() {
     let messageElement = document.getElementById('message');
     if (guessSuspect === secretSuspect && guessRoom === secretRoom && guessWeapon === secretWeapon) {
         messageElement.innerHTML = 'Congratulations! You win!';
+        incrementComputerLosses();
         doSomeoneWon();
+        updateRecord(getUsername(), -1);
     } else {
         let wrongComponent = getOneWrongComponent(
             [guessSuspect,  guessRoom,  guessWeapon], 
@@ -389,6 +441,8 @@ function doComputerGuess() {
         messageText += 'Computer wins!';
         messageElement.innerHTML = messageText;
         doSomeoneWon();
+        incrementComputerWins();
+        updateRecord(getUsername(), 1);
     } else {
         let wrongComponent = getOneWrongComponent(
             [compGuessSuspect,  compGuessRoom,  compGuessWeapon], 
@@ -428,5 +482,65 @@ function updateHistory() {
         let historyLinesHTML = guessHistoryHTML('User guesses:<br>', getUserGuesses());
         historyLinesHTML += guessHistoryHTML('Computer guesses:<br>', getComputerGuesses());
         historyLinesDiv.innerHTML = historyLinesHTML;
+    }
+}
+
+function getWinLossHTML() {
+    let html = 'Computer Record (W-L): ' + getComputerWins() + '-' + getComputerLosses() + '<br>';
+    return html;
+}
+
+function getPlayerHistory() {
+    return localStorage.getItem(PLAYER_HISTORY_KEY);
+}
+
+function savePlayerHistory(newHistory) {
+    localStorage.setItem(PLAYER_HISTORY_KEY, newHistory);
+}
+
+function addPlayerHistory(username, winLoss) {
+    let currentHistory = getPlayerHistory();
+    if (!currentHistory) {
+        currentHistory = '';
+    }
+
+    currentHistory += username + ' ---- Computer ';
+    if (winLoss > 0) {
+        currentHistory += 'WON ';
+    } else {
+        currentHistory += 'LOST ';
+    }
+    currentHistory += ' ---- ' + new Date() + '<br>';
+    savePlayerHistory(currentHistory);
+}
+
+function updateRecord(username, winLoss) {
+    if (username && winLoss) {
+        addPlayerHistory(username, winLoss);
+    }
+
+    let recordLinesDiv = document.getElementById('recordLines');
+    if (recordLinesDiv.style.display === 'block') {
+        let recordLinesHTML = getWinLossHTML();
+        if (recordLinesHTML) {
+            let playerHistory = getPlayerHistory();
+            if (playerHistory) {
+                recordLinesHTML += playerHistory;
+            }
+        }
+        recordLinesDiv.innerHTML = recordLinesHTML;
+    }
+}
+
+function showOrHideRecord() {
+    let showRecordBtn = document.getElementById('showRecord');
+    let recordLinesDiv = document.getElementById('recordLines');
+    if (showRecordBtn.innerHTML === 'Hide Record') {
+        recordLinesDiv.style.display = 'none';
+        showRecordBtn.innerHTML = 'Show Record';
+    } else {
+        recordLinesDiv.style.display = 'block';
+        showRecordBtn.innerHTML = 'Hide Record';
+        updateRecord();
     }
 }
